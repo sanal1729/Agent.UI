@@ -1,0 +1,130 @@
+/* Filter input */
+.filter-container {
+  margin-bottom: 1rem;
+}
+.filter-container input {
+  padding: 8px;
+  width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Main Table */
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.styled-table th,
+.styled-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.styled-table thead {
+  background-color: #0d0d0d;
+  font-weight: 600;
+}
+
+.styled-table thead th {
+  color: #fff; /* White text */
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.styled-table thead th:hover {
+  color: #00bcd4; /* Green text on hover */
+  cursor: pointer;
+}
+.styled-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+.styled-table tbody tr:hover {
+  background-color: #f1f1f1;
+  cursor: pointer;
+}
+.expanded-row {
+  background-color: #00bcd4 !important;
+  color: #0d0d0d;
+
+  font-weight: bold;
+}
+
+/* Chevron */
+.bi {
+  margin-right: 6px;
+  transition: transform 0.3s ease;
+}
+.rotate {
+  transform: rotate(90deg);
+}
+
+/* Child table */
+.child-table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+   overflow: hidden;
+  border-radius: 12px; /* Rounded corners */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional for depth */
+}
+/* .child-table th,
+.child-table td {
+  border: 0px solid #ddd;
+  padding: 8px;
+} */
+.child-table thead {
+  background-color: #0d0d0d; /* Black background */
+  color: #fff;            /* White text */
+}
+
+.child-table th {
+  padding: 8px;
+  font-weight: 600;
+   background-color: #0d0d0d !important;
+  color: #fff !important;
+}
+/* Prevent hover color change */
+.child-table th:hover {
+  background-color: #0d0d0d !important;
+  color: #00bcd4 !important;
+  cursor: default;
+}
+
+/* Pagination */
+.pagination-nav {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.pagination-nav button {
+  padding: 6px 12px;
+  border: none;
+  background: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pagination-nav button.active {
+  background: #00bcd4;
+  color: white;
+  font-weight: bold;
+}
+
+.expandable-content {
+  transform-origin: top;
+  transform: scaleY(0);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  height: auto; /* keep natural height */
+  overflow: hidden;
+}
+
+.expandable-content.expanded {
+  transform: scaleY(1);
+  opacity: 1;
+}
+

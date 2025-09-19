@@ -1,0 +1,131 @@
+/* Header container */
+.header {
+  background-color: #0d0d0d;
+  padding: 1rem 2rem;
+  color: white;
+  display: flex;
+  justify-content: flex-end; /* Right align all content */
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Navigation container */
+.nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end; /* Right align nav content */
+}
+
+/* Navigation links */
+.nav a {
+  position: relative;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+  padding-bottom: 0.1rem;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+/* Underline animation on hover and active */
+.nav a::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background-color: #00bcd4;
+  transition: width 0.3s ease;
+}
+
+.nav a:hover,
+.nav a.active {
+  color: #00bcd4;
+  transform: scale(0.90);
+}
+
+.nav a:hover::after,
+.nav a.active::after {
+  width: 100%;
+}
+
+/* Dropdown container */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Hamburger button */
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  transition: color 0.3s, transform 0.3s;
+}
+
+.hamburger-btn:hover,
+.hamburger-btn:focus {
+  color: #00bcd4;
+  transform: scale(0.90);
+  outline: none;
+}
+
+/* Dropdown content */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: #0d0d0d;
+  min-width: 160px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0;
+  flex-direction: column;
+}
+
+.dropdown-content a {
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  display: block;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+
+.dropdown-content a:hover,
+.dropdown-content a.active {
+  background-color: #0d0d0d;
+  color: #00bcd4;
+}
+
+.dropdown-content.show {
+  display: flex;
+}
+
+/* Responsive: dropdown adapts on small screens */
+@media (max-width: 600px) {
+  .dropdown-content {
+    right: auto;
+    left: 0;
+    min-width: 140px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-end; /* Right-align even in column mode */
+    gap: 1rem;
+  }
+
+  .nav {
+    justify-content: flex-end;
+    gap: 1rem;
+    width: 100%;
+  }
+}

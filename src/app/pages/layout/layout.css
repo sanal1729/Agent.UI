@@ -1,0 +1,16 @@
+:host {
+  display: block;
+  height: 100vh;
+  background: #f0f2f5; /* light background for layout */
+  color: #0d0d0d;
+  font-family: 'Segoe UI', sans-serif;
+}
+/* Container for router outlet content */
+.router-content {
+  padding: 2rem;
+  background-color: #fff;
+  margin: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  min-height: calc(100vh - 80px);
+}

@@ -1,0 +1,86 @@
+<!-- Filter -->
+<div class="filter-container">
+  <input
+    type="text"
+    placeholder="Filter organizations..."
+    [value]="filterTerm()"
+    (input)="filterTerm.set($any($event.target).value)"
+  />
+</div>
+
+<!-- Table -->
+<table class="styled-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Country</th>
+      <th>Currency</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (org of pagedOrgs(); track org.id; let i = $index) {
+      <tr (click)="toggleDetails(org.id)" [class.expanded-row]="expandedId() === org.id">
+        <td>
+          <i class="bi bi-chevron-right" [class.rotate]="expandedId() === org.id"></i>
+          {{ (currentPage() - 1) * pageSize + i + 1 }}
+        </td>
+        <td>{{ org.id }}</td>
+        <td>{{ org.name }}</td>
+        <td>{{ org.countryCode }}</td>
+        <td>{{ org.currencyCode }}</td>
+      </tr>
+
+      @if (expandedId() === org.id) {
+        <tr>
+          <td colspan="5">
+            <div class="branch-container">
+              <h6>Branches</h6>
+              @if (org.branches.length > 0) {
+                <table class="child-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Code</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (branch of org.branches; track branch.id; let j = $index) {
+                      <tr>
+                        <td>{{ j + 1 }}</td>
+                        <td>{{ branch.id }}</td>
+                        <td>{{ branch.name }}</td>
+                        <td>{{ branch.code }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p>No branches found.</p>
+              }
+            </div>
+          </td>
+        </tr>
+      }
+    } @empty {
+      <tr><td colspan="5">No organizations found.</td></tr>
+    }
+  </tbody>
+</table>
+
+<!-- Pagination -->
+@if (totalPages() > 1) {
+  <nav class="pagination-nav">
+    @for (page of [].constructor(totalPages()); track page; let i = $index) {
+      <button
+        (click)="changePage(i + 1)"
+        [class.active]="currentPage() === i + 1"
+      >
+        {{ i + 1 }}
+      </button>
+    }
+  </nav>
+}

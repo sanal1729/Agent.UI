@@ -1,0 +1,26 @@
+<header class="header text-white py-3 px-4">
+  <nav class="nav d-flex justify-content-end align-items-center flex-wrap w-100 gap-3" aria-label="Main Navigation">
+    <a class="text-white text-decoration-none fw-medium position-relative" 
+       [routerLink]="['/agent/home']"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{ exact: true }">
+      <span class="link-text">Home</span>
+    </a>
+
+    <a class="text-white text-decoration-none fw-medium position-relative" 
+       [routerLink]="['/agent/dashboard']"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{ exact: true }">
+      <span class="link-text">Dashboard</span>
+    </a>
+
+    <div class="dropdown position-relative" (mouseenter)="isDropdownOpen = true" (mouseleave)="isDropdownOpen = false">
+      <span class="hamburger-btn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></span>
+      <div class="dropdown-content position-absolute rounded shadow p-2 mt-1" [class.d-flex]="isDropdownOpen" [class.d-none]="!isDropdownOpen" style="right: 0;">
+        <a class="dropdown-item text-white fw-medium" [routerLink]="['/agent/settings']">Settings</a>
+        <a class="dropdown-item text-white fw-medium" (click)="logout()">Logout</a>
+        <a class="dropdown-item text-white fw-medium" [routerLink]="['/agent/profile']">{{loginUser | titlecase}}</a>
+      </div>
+    </div>
+  </nav>
+</header>
