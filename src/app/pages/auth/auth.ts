@@ -213,7 +213,10 @@ this.authStore.setLoading(true);
 
 authObservable.pipe(
   takeUntil(this.destroy$),
-  finalize(() => this.authStore.setLoading(false))
+  finalize(() => {
+    this.authStore.setLoading(false);
+    this.isLoading = false; // Reset loading state
+  })
 ).subscribe({
   next: (res: AuthResponse) => {
     // ✅ 200 OK → success
