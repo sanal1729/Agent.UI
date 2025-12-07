@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, VERSION } from '@angular/core';
 
 @Component({
   selector: 'app-footer',
@@ -7,5 +7,8 @@ import { Component } from '@angular/core';
   styleUrl: './footer.css'
 })
 export class Footer {
+  currentYear: number = new Date().getFullYear();
+  companyName: string = 'Agent Ltd.';
+  angularVersion: string = VERSION.full;
 
 }

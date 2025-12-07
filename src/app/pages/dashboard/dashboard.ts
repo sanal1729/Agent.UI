@@ -7,7 +7,7 @@ import {
   effect,
   Signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { takeUntil } from 'rxjs';
 import { Subject } from 'rxjs';
 import { Organization } from '../../core/entities/classes/organization';
@@ -17,7 +17,7 @@ import { OrgService } from '../../core/services/org.service';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })

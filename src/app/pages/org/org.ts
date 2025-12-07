@@ -1,10 +1,11 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Observable, Subject, takeUntil } from 'rxjs';
 import { OrgService } from '../../core/services/org.service';
 import { AuthStore } from '../../core/states/auth.store';
 import { FormsModule, NgForm } from '@angular/forms';
 import { v7 as uuidv7 } from 'uuid';
+import { SkeletonLoader } from '../../shared/skeleton-loader/skeleton-loader';
 
 
 // Interfaces
@@ -25,21 +26,19 @@ export interface Organization {
 @Component({
   selector: 'app-org-component',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, SkeletonLoader],
   template: `
 <div class="organization-table-container">
   <!-- Org Table -->
- <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Organizations</h2>
-  </div>
+
 
   <!-- Search + Add Button Row -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <!-- Left: Search Input -->
     <input type="text"
-           class="form-control w-50"
-           placeholder="Search organizations..."
-           (keyup)="applyFilter($event)" />
+      class="form-control w-50"
+      placeholder="Search organizations..."
+      (keyup)="applyFilter($event)" />
 
     <!-- Right: Add Button -->
     <button class="btn btn-primary" (click)="openAddModal()">
@@ -47,281 +46,326 @@ export interface Organization {
     </button>
   </div>
 
-
-<div class="progress-bar" *ngIf="loading()"></div>
-
   <div class="table-wrapper">
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th (click)="sortBy('name')">
-          <span [class.active]="sortColumn() === 'name'">
-            Name
-            <ng-container *ngIf="sortColumn() === 'name'">
-              {{ sortDirection() === 'asc' ? '⬆' : '⬇' }}
-            </ng-container>
-          </span>
-        </th>
-        <th (click)="sortBy('countryCode')">
-          <span [class.active]="sortColumn() === 'countryCode'">
-            Country
-            <ng-container *ngIf="sortColumn() === 'countryCode'">
-              {{ sortDirection() === 'asc' ? '⬆' : '⬇' }}
-            </ng-container>
-          </span>
-        </th>
-        <th (click)="sortBy('currencyCode')">
-          <span [class.active]="sortColumn() === 'currencyCode'">
-            Currency
-            <ng-container *ngIf="sortColumn() === 'currencyCode'">
-              {{ sortDirection() === 'asc' ? '⬆' : '⬇' }}
-            </ng-container>
-          </span>
-        </th>
-        <th><span>#Branches</span></th>
-        <th><span>Actions</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let org of organizations(); let i = index; trackBy: trackById">
-        <td>{{ (pageIndex() * pageSize()) + (i + 1) }}</td>
-        <td>{{ org.name }}</td>
-        <td>{{ org.countryCode }}</td>
-        <td>{{ org.currencyCode }}</td>
-        <td>{{ org.branches.length || 0 }}</td>
-        <td>
-          <i (click)="openEditModal(org)" title="Edit" class="fa fa-pencil-alt edit-icon"></i>
-          <i (click)="removeOrg(org)" title="Delete" class="fa fa-trash-alt delete-icon ms-1"></i>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th (click)="sortBy('name')">
+            <span [class.active]="sortColumn() === 'name'">
+              Name
+              @if (sortColumn() === 'name') {
+                {{ sortDirection() === 'asc' ? '⬆' : '⬇' }}
+              }
+            </span>
+          </th>
+          <th (click)="sortBy('countryCode')">
+            <span [class.active]="sortColumn() === 'countryCode'">
+              Country
+              @if (sortColumn() === 'countryCode') {
+                {{ sortDirection() === 'asc' ? '⬆' : '⬇' }}
+              }
+            </span>
+          </th>
+          <th (click)="sortBy('currencyCode')">
+            <span [class.active]="sortColumn() === 'currencyCode'">
+              Currency
+              @if (sortColumn() === 'currencyCode') {
+                {{ sortDirection() === 'asc' ? '⬆' : '⬇' }}
+              }
+            </span>
+          </th>
+          <th><span>#Branches</span></th>
+          <th><span>Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+         <!-- ✅ Show Skeleton when loading() === true -->
+  @if (loading()) {
+  <tr>
+    <td colspan="6">
+
+<!-- place in any template after importing the component -->
+<app-skeleton-loader
+  [rows]="pageSize()"
+  height="40px"
+  radius="10px"
+>
+</app-skeleton-loader>
+
+    </td>
+  </tr>
+}
+
+        @else {
+        @for (org of organizations(); track trackById(i, org); let i = $index) {
+          <tr>
+            <td>{{ (pageIndex() * pageSize()) + (i + 1) }}</td>
+            <td>{{ org.name }}</td>
+            <td>{{ org.countryCode }}</td>
+            <td>{{ org.currencyCode }}</td>
+            <td>{{ org.branches.length || 0 }}</td>
+            <td>
+              <i (click)="openEditModal(org)" title="Edit" class="fa fa-pencil-alt edit-icon"></i>
+              <i (click)="removeOrg(org)" title="Delete" class="fa fa-trash-alt delete-icon ms-1"></i>
+            </td>
+          </tr>
+        }
+}
+      </tbody>
+    </table>
+  </div>
 
 
   <!-- Pagination -->
   <div class="pagination-alt">
     <button class="arrow-btn" [disabled]="pageIndex() === 0" (click)="goToPage(pageIndex() - 1)">◀</button>
     <span class="page-info" (mouseenter)="editingPage = true" (mouseleave)="editingPage = false">
-      <ng-container *ngIf="!editingPage">
+      @if (!editingPage) {
         Page {{ pageIndex() + 1 }} / {{ totalPages() }}
-      </ng-container>
-      <ng-container *ngIf="editingPage">
-        <input type="number" class="page-jump-input"
-               [min]="1" [max]="totalPages()"
-               [value]="pageIndex() + 1"
-               (blur)="confirmPageJump($event)"
-               (keyup.enter)="confirmPageJump($event)" />
+      }
+      @if (editingPage) {
+        <input type="number"
+          class="page-jump-input"
+          [min]="1"
+          [max]="totalPages()"
+          [value]="pageIndex() + 1"
+          (keyup.enter)="confirmPageJump($event)"
+          (blur)="editingPage = false" />
         <span>/ {{ totalPages() }}</span>
-      </ng-container>
+      }
     </span>
     <button class="arrow-btn" [disabled]="pageIndex() >= totalPages() - 1" (click)="goToPage(pageIndex() + 1)">▶</button>
     <select class="page-size"
-            [value]="pageSize()"
-            (change)="changePageSize($any($event.target).value)">
-      <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+      [value]="pageSize()"
+      (change)="changePageSize($any($event.target).value)">
+      @for (size of pageSizeOptions; track size) {
+        <option [value]="size">{{ size }}</option>
+      }
     </select>
   </div>
 
   <!-- Modal -->
-  <div class="modal fade show d-block" tabindex="-1" *ngIf="editModalOpen" (click)="closeEditModal()">
-    <div class="modal-dialog modal-xl modal-dialog-centered" (click)="$event.stopPropagation()">
-      <div class="modal-content glass-card">
-        <div class="modal-header">
-          <h5 class="modal-title"><span *ngIf="!isEditOrg">Add</span><span *ngIf="isEditOrg">Edit</span> Organization</h5>
-          <button type="button" class="btn-close" (click)="closeEditModal()"></button>
-        </div>
-
-        <form #editForm="ngForm" (ngSubmit)="saveEdit(editForm)">
-  <div class="modal-body">
-    <!-- Org fields -->
-    <div class="row g-3">
-      <div class="col-md-4">
-        <label class="form-label">Name</label>
-        <input type="text"
-               class="form-control"
-               name="name"
-               [(ngModel)]="editAddOrg.name"
-               required minlength="2" maxlength="60"
-               #orgName="ngModel" />
-        <div *ngIf="orgName.invalid && (orgName.touched || editForm.submitted)" class="text-danger small">
-          Organization name is required (min 2 characters).
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <label class="form-label">Country Code</label>
-        <input type="text"
-               class="form-control"
-               name="countryCode"
-               [(ngModel)]="editAddOrg.countryCode"
-               required pattern="[A-Z]{2,3}" maxlength="3"
-               #countryCode="ngModel" />
-        <div *ngIf="countryCode.invalid && (countryCode.touched || editForm.submitted)" class="text-danger small">
-          Country code is required (2–3 uppercase letters).
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <label class="form-label">Currency Code</label>
-        <input type="text"
-               class="form-control"
-               name="currencyCode"
-               [(ngModel)]="editAddOrg.currencyCode"
-               required pattern="[A-Z]{3}" maxlength="3"
-               #currencyCode="ngModel" />
-        <div *ngIf="currencyCode.invalid && (currencyCode.touched || editForm.submitted)" class="text-danger small">
-          Currency code is required (3 uppercase letters).
+  @if (editModalOpen) {
+    <div class="modal fade show d-block" tabindex="-1" (click)="closeEditModal()">
+      <div class="modal-dialog modal-xl modal-dialog-centered" (click)="$event.stopPropagation()">
+        <div class="modal-content glass-card">
+          <div class="modal-header">
+            <h5 class="modal-title">@if (!isEditOrg) {
+              <span>Add</span>
+              }@if (isEditOrg) {
+              <span>Edit</span>
+            } Organization</h5>
+            <button type="button" class="btn-close" (click)="closeEditModal()"></button>
+          </div>
+          <form #editForm="ngForm" (ngSubmit)="saveEdit(editForm)">
+            <div class="modal-body">
+              <!-- Org fields -->
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Name</label>
+                  <input type="text"
+                    class="form-control"
+                    name="name"
+                    [(ngModel)]="editAddOrg.name"
+                    required minlength="2" maxlength="60"
+                    #orgName="ngModel" />
+                  @if (orgName.invalid && (orgName.touched || editForm.submitted)) {
+                    <div class="text-danger small">
+                      Organization name is required (min 2 characters).
+                    </div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Country Code</label>
+                  <input type="text"
+                    class="form-control"
+                    name="countryCode"
+                    [(ngModel)]="editAddOrg.countryCode"
+                    required pattern="[A-Z]{2,3}" maxlength="3"
+                    #countryCode="ngModel" />
+                  @if (countryCode.invalid && (countryCode.touched || editForm.submitted)) {
+                    <div class="text-danger small">
+                      Country code is required (2–3 uppercase letters).
+                    </div>
+                  }
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Currency Code</label>
+                  <input type="text"
+                    class="form-control"
+                    name="currencyCode"
+                    [(ngModel)]="editAddOrg.currencyCode"
+                    required pattern="[A-Z]{3}" maxlength="3"
+                    #currencyCode="ngModel" />
+                  @if (currencyCode.invalid && (currencyCode.touched || editForm.submitted)) {
+                    <div class="text-danger small">
+                      Currency code is required (3 uppercase letters).
+                    </div>
+                  }
+                </div>
+              </div>
+              <hr class="my-4" />
+              <!-- Branch section -->
+              <section>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  @if (filteredBranches().length > 0) {
+                    <div class="d-flex gap-2">
+                      <input type="text" class="form-control form-control-sm"
+                        placeholder="Search branches..."
+                        [(ngModel)]="branchFilter"
+                        name="branchFilter" />
+                    </div>
+                  }
+                  <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addBranch()">+ Add Branch</button>
+                  </div>
+                </div>
+                @if (filteredBranches().length === 0 && newBranches.length === 0) {
+                  <div class="text-muted fst-italic">
+                    No branches found.
+                  </div>
+                }
+                @if (filteredBranches().length > 0 || newBranches.length > 0) {
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle glass-subcard">
+                      <thead class="table-light">
+                        <tr>
+                          <th>#</th>
+                          <th (click)="sortBranches('name')">Name</th>
+                          <th (click)="sortBranches('code')">Code</th>
+                          <th class="text-end">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- New branches -->
+                        @for (branch of newBranches; track trackByBranchId(i, branch); let i = $index) {
+                          <tr class="branch-new">
+                            <td>NEW</td>
+                            <td>
+                              <input type="text"
+                                class="form-control form-control-sm"
+                                [(ngModel)]="branch.name"
+                                name="branchName-{{branch.id}}"
+                                required minlength="1" maxlength="60"
+                                #bnNew="ngModel" />
+                              @if (bnNew.invalid && (bnNew.touched || editForm.submitted)) {
+                                <div class="text-danger small">
+                                  Branch name is required.
+                                </div>
+                              }
+                            </td>
+                            <td>
+                              <input type="text"
+                                class="form-control form-control-sm"
+                                [(ngModel)]="branch.code"
+                                name="branchCode-{{branch.id}}"
+                                required maxlength="10"
+                                #bcNew="ngModel" />
+                              @if (bcNew.invalid && (bcNew.touched || editForm.submitted)) {
+                                <div class="text-danger small">
+                                  Branch code required.
+                                </div>
+                              }
+                            </td>
+                            <td class="text-end">
+                              <i (click)="removeBranch(branch.id, true)" title="Delete" class="fa fa-trash-alt delete-icon ms-1"></i>
+                            </td>
+                          </tr>
+                        }
+                        <!-- Existing branches -->
+                        @for (branch of pagedBranches(); track trackByBranchId(i, branch); let i = $index) {
+                          <tr
+                            [class.branch-edited]="isEditingBranch(branch.id)">
+                            <td>{{ (branchCurrentPage - 1) * branchPageSize + i + 1 }}</td>
+                            <td>
+                              @if (isEditingBranch(branch.id)) {
+                                <input type="text"
+                                  class="form-control form-control-sm"
+                                  [(ngModel)]="branch.name"
+                                  name="branchName-{{branch.id}}"
+                                  required minlength="1" maxlength="60"
+                                  #bn="ngModel" />
+                                @if (bn.invalid && (bn.touched || editForm.submitted)) {
+                                  <div class="text-danger small">
+                                    Branch name is required.
+                                  </div>
+                                }
+                              } @else {
+                                {{ branch.name }}
+                              }
+                            </td>
+                            <td>
+                              @if (isEditingBranch(branch.id)) {
+                                <input type="text"
+                                  class="form-control form-control-sm"
+                                  [(ngModel)]="branch.code"
+                                  name="branchCode-{{branch.id}}"
+                                  required pattern="[A-Z0-9]{1,10}" maxlength="10"
+                                  #bc="ngModel" />
+                                @if (bc.invalid && (bc.touched || editForm.submitted)) {
+                                  <div class="text-danger small">
+                                    Branch code is required (A–Z, 0–9, up to 10 chars).
+                                  </div>
+                                }
+                              } @else {
+                                {{ branch.code }}
+                              }
+                            </td>
+                            <td class="text-end">
+                              @if (isEditingBranch(branch.id)) {
+                                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelEditBranch(branch.id)">Cancel</button>
+                              } @else {
+                                <i (click)="editBranch(branch.id)" title="Edit" class="fa fa-pencil-alt edit-icon"></i>
+                              }
+                              <i (click)="removeBranch(branch.id)" title="Delete" class="fa fa-trash-alt delete-icon ms-1"></i>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+                <!-- Branch pagination -->
+                @if (totalBranchPages() > 1) {
+                  <nav class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Page {{ branchCurrentPage }} of {{ totalBranchPages() }}</small>
+                    <ul class="pagination pagination-sm mb-0">
+                      <li class="page-item" [class.disabled]="branchCurrentPage === 1">
+                        <button class="page-link" type="button" (click)="prevBranchPage()">Previous</button>
+                      </li>
+                      <li class="page-item" [class.disabled]="branchCurrentPage === totalBranchPages()">
+                        <button class="page-link" type="button" (click)="nextBranchPage()">Next</button>
+                      </li>
+                    </ul>
+                  </nav>
+                }
+              </section>
+            </div>
+            <div class="modal-footer">
+              <button type="button"
+                class="btn btn-outline-secondary"
+                (click)="closeEditModal()"
+                [disabled]="loadingEdit">
+                Cancel
+              </button>
+              <button type="submit"
+                class="btn btn-primary"
+                [disabled]="loadingEdit || editForm.invalid || hasBranchValidationErrors()">
+                {{ loadingEdit ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+            @if (editError) {
+              <div class="text-danger text-center pb-3">{{ editError }}</div>
+            }
+          </form>
         </div>
       </div>
     </div>
-
-    <hr class="my-4" />
-
-    <!-- Branch section -->
-    <section>
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div *ngIf="filteredBranches().length > 0" class="d-flex gap-2">
-          <input type="text" class="form-control form-control-sm"
-                 placeholder="Search branches..."
-                 [(ngModel)]="branchFilter"
-                 name="branchFilter" />
-        </div>
-        <div>
-          <button type="button" class="btn btn-sm btn-outline-primary" (click)="addBranch()">+ Add Branch</button>
-        </div>
-      </div>
-
-      <div *ngIf="filteredBranches().length === 0 && newBranches.length === 0" class="text-muted fst-italic">
-        No branches found.
-      </div>
-
-      <div *ngIf="filteredBranches().length > 0 || newBranches.length > 0" class="table-responsive">
-        <table class="table table-hover align-middle glass-subcard">
-          <thead class="table-light">
-            <tr>
-              <th>#</th>
-              <th (click)="sortBranches('name')">Name</th>
-              <th (click)="sortBranches('code')">Code</th>
-              <th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- New branches -->
-            <tr *ngFor="let branch of newBranches; let i = index; trackBy: trackByBranchId" class="branch-new">
-              <td>NEW</td>
-              <td>
-                <input type="text"
-                       class="form-control form-control-sm"
-                       [(ngModel)]="branch.name"
-                       name="branchName-{{branch.id}}"
-                       required minlength="1" maxlength="60"
-                       #bnNew="ngModel" />
-                <div *ngIf="bnNew.invalid && (bnNew.touched || editForm.submitted)" class="text-danger small">
-                  Branch name is required.
-                </div>
-              </td>
-              <td>
-                <input type="text"
-                       class="form-control form-control-sm"
-                       [(ngModel)]="branch.code"
-                       name="branchCode-{{branch.id}}"
-                       required maxlength="10"
-                       #bcNew="ngModel" />
-                <div *ngIf="bcNew.invalid && (bcNew.touched || editForm.submitted)" class="text-danger small">
-                  Branch code required.
-                </div>
-              </td>
-              <td class="text-end">
-                <i (click)="removeBranch(branch.id, true)" title="Delete" class="fa fa-trash-alt delete-icon ms-1"></i>
-              </td>
-            </tr>
-
-            <!-- Existing branches -->
-            <tr *ngFor="let branch of pagedBranches(); let i = index; trackBy: trackByBranchId"
-                [class.branch-edited]="isEditingBranch(branch.id)">
-              <td>{{ (branchCurrentPage - 1) * branchPageSize + i + 1 }}</td>
-              <td>
-                <ng-container *ngIf="isEditingBranch(branch.id); else readonlyName">
-                  <input type="text"
-                         class="form-control form-control-sm"
-                         [(ngModel)]="branch.name"
-                         name="branchName-{{branch.id}}"
-                         required minlength="1" maxlength="60"
-                         #bn="ngModel" />
-                  <div *ngIf="bn.invalid && (bn.touched || editForm.submitted)" class="text-danger small">
-                    Branch name is required.
-                  </div>
-                </ng-container>
-                <ng-template #readonlyName>{{ branch.name }}</ng-template>
-              </td>
-              <td>
-                <ng-container *ngIf="isEditingBranch(branch.id); else readonlyCode">
-                  <input type="text"
-                         class="form-control form-control-sm"
-                         [(ngModel)]="branch.code"
-                         name="branchCode-{{branch.id}}"
-                         required pattern="[A-Z0-9]{1,10}" maxlength="10"
-                         #bc="ngModel" />
-                  <div *ngIf="bc.invalid && (bc.touched || editForm.submitted)" class="text-danger small">
-                    Branch code is required (A–Z, 0–9, up to 10 chars).
-                  </div>
-                </ng-container>
-                <ng-template #readonlyCode>{{ branch.code }}</ng-template>
-              </td>
-              <td class="text-end">
-                <ng-container *ngIf="isEditingBranch(branch.id); else editBtn">
-                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelEditBranch(branch.id)">Cancel</button>
-                </ng-container>
-                <ng-template #editBtn>
-                  <i (click)="editBranch(branch.id)" title="Edit" class="fa fa-pencil-alt edit-icon"></i>
-                </ng-template>
-                <i (click)="removeBranch(branch.id)" title="Delete" class="fa fa-trash-alt delete-icon ms-1"></i>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Branch pagination -->
-      <nav *ngIf="totalBranchPages() > 1" class="d-flex justify-content-between align-items-center">
-        <small class="text-muted">Page {{ branchCurrentPage }} of {{ totalBranchPages() }}</small>
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item" [class.disabled]="branchCurrentPage === 1">
-            <button class="page-link" type="button" (click)="prevBranchPage()">Previous</button>
-          </li>
-          <li class="page-item" [class.disabled]="branchCurrentPage === totalBranchPages()">
-            <button class="page-link" type="button" (click)="nextBranchPage()">Next</button>
-          </li>
-        </ul>
-      </nav>
-    </section>
-  </div>
-
-  <div class="modal-footer">
-    <button type="button"
-            class="btn btn-outline-secondary"
-            (click)="closeEditModal()"
-            [disabled]="loadingEdit">
-      Cancel
-    </button>
-    <button type="submit"
-            class="btn btn-primary"
-            [disabled]="loadingEdit || editForm.invalid || hasBranchValidationErrors()">
-      {{ loadingEdit ? 'Saving...' : 'Save' }}
-    </button>
-  </div>
-
-  <div class="text-danger text-center pb-3" *ngIf="editError">{{ editError }}</div>
-</form>
-
-      </div>
-    </div>
-  </div>
+  }
 </div>
-  `,
-styles: [`
+`,
+  styles: [`
 /* =====================
    General Layout
 ===================== */
@@ -331,7 +375,7 @@ styles: [`
 .organization-table-container {
   background: #fff;
   border-radius: 0.75rem;
-  padding: 1.5rem;
+  padding: 1.0rem;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1);
 }
 
@@ -363,19 +407,7 @@ styles: [`
   outline: none;
 }
 
-/* Progress bar (loading indicator) */
-.progress-bar {
-  height: 4px;
-  width: 100%;
-  background: linear-gradient(90deg, #00bcd4, #6ea8fe);
-  border-radius: 2px;
-  animation: progress-indeterminate 1.5s infinite linear;
-  margin-bottom: 1rem;
-}
-@keyframes progress-indeterminate {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
-}
+
 
 /* Table wrapper for responsive scroll */
 .table-wrapper {
@@ -506,7 +538,7 @@ styles: [`
 .table-wrapper {
   overflow-x: auto;
   width: fit-content;
-  height: 500px;
+  height: 520px;
 }
 .table {
   width: 100%;
@@ -634,22 +666,7 @@ styles: [`
   vertical-align: middle;
 }
 
-/* =====================
-   Progress Bar (loading indicator)
-===================== */
-.progress-bar {
-  height: 4px;
-  width: 100%;
-  background: linear-gradient(90deg, #00bcd4, #6f42c1, #00bcd4);
-  background-size: 200% 100%;
-  animation: progress-bar-stripes 1.5s linear infinite;
-  border-radius: 2px;
-  margin-bottom: 0.75rem;
-}
-@keyframes progress-bar-stripes {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
-}
+
 
 /* =====================
    Responsive
@@ -666,12 +683,12 @@ styles: [`
 })
 export class Org implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  readonly organizations = signal<Organization[]>([]);
   readonly loading = signal<boolean>(false);
+  readonly organizations = signal<Organization[]>([]);
   readonly filterValue = signal<string>('');
   readonly totalCount = signal<number>(0);
   readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize())));
-  readonly pageSizeOptions = [5, 10, 20];
+  readonly pageSizeOptions = [10, 20, 50, 100];
   readonly pageSize = signal<number>(10);
   readonly pageIndex = signal<number>(0);
   readonly sortColumn = signal<string>('name');
@@ -710,7 +727,7 @@ export class Org implements OnInit, OnDestroy {
     if (this.branchFilter) {
       const term = this.branchFilter.toLowerCase();
       baseFiltered = branches.filter(b => b.name?.toLowerCase().includes(term) || b.code?.toLowerCase().includes(term));
-    this.branchCurrentPage = 1;
+      this.branchCurrentPage = 1;
     }
 
     const column = this.branchSortColumn();
@@ -831,7 +848,8 @@ export class Org implements OnInit, OnDestroy {
         this.totalCount.set(res.totalCount || (res.organizations || []).length);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => { this.loading.set(false)}
+      ,
     });
   }
   openEditModal(org: Organization) {
@@ -858,57 +876,57 @@ export class Org implements OnInit, OnDestroy {
     this.newBranches = [];
     this.loadingEdit = true;
     if (this.isEditOrg) {
-  this.handleOrgSave(this.orgService.update(this.editAddOrg));
-} else {
-  this.handleOrgSave(this.orgService.create(this.editAddOrg));
-}
-  //   if (this.isEditOrg) {
-  //     this.orgService.update(this.editAddOrg).pipe(takeUntil(this.destroy$)).subscribe({
-  //       next: (updatedOrg: Organization) => {
-  //         const list = [...this.organizations()];
-  //         const ix = list.findIndex(o => o.id === updatedOrg.id);
-  //         if (ix >= 0) list[ix] = updatedOrg; else list.unshift(updatedOrg);
-  //         this.organizations.set(list);
-  //         this.editModalOpen = false;
-  //         this.loadingEdit = false;
-  //         this.branchCurrentPage = 1;
-  //       },
-  //       error: () => { this.editError = 'Failed to save organization. Please try again.'; this.loadingEdit = false; }
-  //     });
-  // }else{
-  //    this.orgService.create(this.editAddOrg).pipe(takeUntil(this.destroy$)).subscribe({
-  //       next: (createdOrg: Organization) => {
-  //         const list = [...this.organizations()];
-  //         const ix = list.findIndex(o => o.id === createdOrg.id);
-  //         if (ix >= 0) list[ix] = createdOrg; else list.unshift(createdOrg);
-  //         this.organizations.set(list);
-  //         this.editModalOpen = false;
-  //         this.loadingEdit = false;
-  //         this.branchCurrentPage = 1;
-  //       },
-  //       error: () => { this.editError = 'Failed to save organization. Please try again.'; this.loadingEdit = false; }
-  //     });
-  //     }
-}
-  handleOrgSave(obs: Observable<Organization>) {
-  obs.pipe(takeUntil(this.destroy$)).subscribe({
-    next: (org) => {
-      const list = [...this.organizations()];
-      const ix = list.findIndex(o => o.id === org.id);
-      if (ix >= 0) list[ix] = org; else list.unshift(org);
-      this.organizations.set(list);
-      this.editModalOpen = false;
-      this.loadingEdit = false;
-      this.branchCurrentPage = 1;
-    },
-    error: () => {
-      this.editError = 'Failed to save organization. Please try again.';
-      this.loadingEdit = false;
+      this.handleOrgSave(this.orgService.update(this.editAddOrg));
+    } else {
+      this.handleOrgSave(this.orgService.create(this.editAddOrg));
     }
-  });
-}
+    //   if (this.isEditOrg) {
+    //     this.orgService.update(this.editAddOrg).pipe(takeUntil(this.destroy$)).subscribe({
+    //       next: (updatedOrg: Organization) => {
+    //         const list = [...this.organizations()];
+    //         const ix = list.findIndex(o => o.id === updatedOrg.id);
+    //         if (ix >= 0) list[ix] = updatedOrg; else list.unshift(updatedOrg);
+    //         this.organizations.set(list);
+    //         this.editModalOpen = false;
+    //         this.loadingEdit = false;
+    //         this.branchCurrentPage = 1;
+    //       },
+    //       error: () => { this.editError = 'Failed to save organization. Please try again.'; this.loadingEdit = false; }
+    //     });
+    // }else{
+    //    this.orgService.create(this.editAddOrg).pipe(takeUntil(this.destroy$)).subscribe({
+    //       next: (createdOrg: Organization) => {
+    //         const list = [...this.organizations()];
+    //         const ix = list.findIndex(o => o.id === createdOrg.id);
+    //         if (ix >= 0) list[ix] = createdOrg; else list.unshift(createdOrg);
+    //         this.organizations.set(list);
+    //         this.editModalOpen = false;
+    //         this.loadingEdit = false;
+    //         this.branchCurrentPage = 1;
+    //       },
+    //       error: () => { this.editError = 'Failed to save organization. Please try again.'; this.loadingEdit = false; }
+    //     });
+    //     }
+  }
+  handleOrgSave(obs: Observable<Organization>) {
+    obs.pipe(takeUntil(this.destroy$)).subscribe({
+      next: (org) => {
+        const list = [...this.organizations()];
+        const ix = list.findIndex(o => o.id === org.id);
+        if (ix >= 0) list[ix] = org; else list.unshift(org);
+        this.organizations.set(list);
+        this.editModalOpen = false;
+        this.loadingEdit = false;
+        this.branchCurrentPage = 1;
+      },
+      error: () => {
+        this.editError = 'Failed to save organization. Please try again.';
+        this.loadingEdit = false;
+      }
+    });
+  }
 
-    // === NEW: Open Add Modal ===
+  // === NEW: Open Add Modal ===
   openAddModal() {
     this.isEditOrg = false;
     this.editAddOrg = {
@@ -927,11 +945,11 @@ export class Org implements OnInit, OnDestroy {
     this.editingBranchPositions.clear();
   }
   removeOrg(org: Organization) {
-  // if (!confirm('Are you sure you want to delete this organization? This action cannot be undone.')) {
-  //   return;
-  // }
+    // if (!confirm('Are you sure you want to delete this organization? This action cannot be undone.')) {
+    //   return;
+    // }
 
-   let deletedOrg = {
+    let deletedOrg = {
       id: org.id,
       name: org.name,
       countryCode: org.countryCode,
@@ -939,37 +957,54 @@ export class Org implements OnInit, OnDestroy {
       branches: org.branches
     };
 
-  this.orgService.delete(deletedOrg).pipe(takeUntil(this.destroy$)).subscribe({
-    next: () => {
-      const list = this.organizations().filter(o => o.id !== deletedOrg.id);
-      this.organizations.set(list);
-      this.totalCount.set(this.totalCount() - 1);
+    this.orgService.delete(deletedOrg).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        const list = this.organizations().filter(o => o.id !== deletedOrg.id);
+        this.organizations.set(list);
+        this.totalCount.set(this.totalCount() - 1);
 
-      // Fix pagination if needed
-      if (this.pageIndex() >= this.totalPages()) {
-        this.pageIndex.set(Math.max(0, this.totalPages() - 1));
+        // Fix pagination if needed
+        if (this.pageIndex() >= this.totalPages()) {
+          this.pageIndex.set(Math.max(0, this.totalPages() - 1));
+        }
+
+        this.fetchOrganizations();
+      },
+      error: (err) => {
+        console.error('Delete failed', err);
+        alert(err?.error?.message || 'Failed to delete organization. Please try again.');
       }
-
-      this.fetchOrganizations();
-    },
-    error: (err) => {
-      console.error('Delete failed', err);
-      alert(err?.error?.message || 'Failed to delete organization. Please try again.');
-    }
-  });
-}
+    });
+  }
 
 
   applyFilter(event: any) { this.filterValue.set(event.target.value); this.pageIndex.set(0); this.fetchOrganizations(); }
-  sortBy(column: string) { if (this.sortColumn() === column) this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc'); else { this.sortColumn.set(column); this.sortDirection.set('asc'); } this.fetchOrganizations(); this.goToPage(0);   }
+  sortBy(column: string) { if (this.sortColumn() === column) this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc'); else { this.sortColumn.set(column); this.sortDirection.set('asc'); } this.fetchOrganizations(); this.goToPage(0); }
   goToPage(index: number) { if (index < 0 || index >= this.totalPages()) return; this.pageIndex.set(index); this.fetchOrganizations(); }
   changePageSize(size: number) { this.pageSize.set(+size); this.pageIndex.set(0); this.fetchOrganizations(); }
-  confirmPageJump(event: any) { const page = +event.target.value - 1; if (page >= 0 && page < this.totalPages()) this.pageIndex.set(page); this.fetchOrganizations(); this.editingPage = false; }
+  confirmPageJump(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value.trim();
+    const page = Number(value) - 1;
+
+    // Validate input
+    if (!Number.isFinite(page) || page < 0 || page >= this.totalPages()) {
+      // Reset to current valid page
+      input.value = String(this.pageIndex() + 1);
+      this.editingPage = false;
+      return;
+    }
+
+    // Apply page jump
+    this.pageIndex.set(page);
+    this.fetchOrganizations();
+    this.editingPage = false;
+  }
 
   trackById(index: number, item: Organization) { return item.id; }
   trackByBranchId(index: number, item: Branch) { return item.id; }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
-  
+
 }

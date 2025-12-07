@@ -1,0 +1,67 @@
+:host {
+  display: block;
+  width: 100%;
+  --skeleton-base: #e5e5e5;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+}
+
+/* Single row placeholder */
+.skeleton-row {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.06) 10%,
+      rgba(255, 255, 255, 0.13) 50%,
+      rgba(255, 255, 255, 0.06) 90%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    var(--skeleton-base);
+  
+  background-size: 200% 200%;
+  will-change: background-position, opacity;
+
+  /* Combined animations */
+  animation:
+    diagGlow 1.7s linear infinite,
+    pulseFade 1.6s ease-in-out infinite;
+}
+
+/* 🔹 Diagonal Glow Sweep Animation */
+@keyframes diagGlow {
+  0%   { background-position: -150% -150%; }
+  100% { background-position: 150% 150%; }
+}
+
+/* 🔹 Soft Pulse Fade */
+@keyframes pulseFade {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* Optional empty state */
+.skeleton-empty {
+  font-size: 0.85rem;
+  opacity: 0.5;
+  padding: 6px 0;
+}
+
+/* For dark mode */
+:host-context(.dark) {
+  --skeleton-base: #2c2c2c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-row {
+    animation: none;
+    opacity: 0.85;
+  }
+}

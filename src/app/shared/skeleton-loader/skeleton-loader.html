@@ -1,0 +1,11 @@
+<div class="skeleton" role="status" aria-live="polite" aria-busy="true">
+  @for (i of rowsArray(); track i) {
+    <div class="skeleton-row"
+         aria-hidden="true"
+         [ngStyle]="rowStyle(i)">
+    </div>
+  }
+  @empty {
+    <div class="skeleton-empty">No placeholders</div>
+  }
+</div>
